@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar, cast, overload
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
@@ -90,6 +92,17 @@ class TypedFrame(Generic[T], Sequence[T]):
         return cls(model, adapter.validate_json(data), unique=unique, _trusted=True)
 
     @classmethod
+    def load_json(
+        cls,
+        model: type[T],
+        path: str | Path,
+        *,
+        unique: str | Iterable[str] | None = None,
+    ) -> TypedFrame[T]:
+        """Load a JSON array of rows from ``path``."""
+        return cls.from_json(model, Path(path).read_text(encoding="utf-8"), unique=unique)
+
+    @classmethod
     def from_pandas(
         cls,
         model: type[T],
@@ -112,6 +125,42 @@ class TypedFrame(Generic[T], Sequence[T]):
         from typedframe.conversions import from_polars
 
         return cls(model, from_polars(df), unique=unique)
+
+    @classmethod
+    def from_csv(
+        cls,
+        model: type[T],
+        source: str | bytes | Path,
+        *,
+        sep: str = ",",
+        header: int | None = 0,
+        comment: str | None = "#",
+        index_col: int | str | Literal[False] | None = False,
+        encoding: str = "utf-8",
+        na_values: Sequence[str] | None = None,
+        quotechar: str = '"',
+        skip_blank_lines: bool = True,
+        unique: str | Iterable[str] | None = None,
+    ) -> TypedFrame[T]:
+        """Load rows from CSV text, bytes, or a file path."""
+        from typedframe.csv_io import csv_to_records
+
+        return cls(
+            model,
+            csv_to_records(
+                source,
+                model,
+                sep=sep,
+                header=header,
+                comment=comment,
+                index_col=index_col,
+                encoding=encoding,
+                na_values=na_values,
+                quotechar=quotechar,
+                skip_blank_lines=skip_blank_lines,
+            ),
+            unique=unique,
+        )
 
     @property
     def model(self) -> type[T]:
@@ -544,12 +593,51 @@ class TypedFrame(Generic[T], Sequence[T]):
     def to_list(self) -> list[T]:
         return list(self._rows)
 
-    def to_dicts(self) -> list[dict[str, Any]]:
-        return [dump_row(row) for row in self._rows]
+    def to_dicts(self, *, mode: Literal["python", "json"] = "python") -> list[dict[str, Any]]:
+        return [dump_row(row, mode=mode) for row in self._rows]
 
-    def to_json(self) -> bytes:
-        adapter: TypeAdapter[list[T]] = TypeAdapter(list[self._model])  # type: ignore[name-defined]
-        return adapter.dump_json(self._rows)
+    def to_json(self, *, indent: int | None = None) -> str:
+        """Serialize rows to a JSON array. Unset future columns are omitted."""
+        return json.dumps(self.to_dicts(mode="json"), indent=indent)
+
+    def dump_json(self, path: str | Path, *, indent: int | None = None) -> None:
+        """Write a JSON array of rows to ``path``."""
+        Path(path).write_text(self.to_json(indent=indent), encoding="utf-8")
+
+    def to_csv(
+        self,
+        path: str | Path | None = None,
+        *,
+        sep: str = ",",
+        index: bool = False,
+        index_label: str = "",
+        header: bool = True,
+        na_rep: str = "",
+        encoding: str = "utf-8",
+        lineterminator: str = "\n",
+        quotechar: str = '"',
+        columns: Sequence[str] | None = None,
+    ) -> str:
+        """Serialize rows to CSV. If ``path`` is given, also write the file."""
+        from typedframe.csv_io import frame_to_csv
+
+        fieldnames = list(columns) if columns is not None else list(self.columns)
+        if columns is not None:
+            require_fields(self._model, tuple(columns))
+        text = frame_to_csv(
+            self.to_dicts(mode="json"),
+            fieldnames,
+            sep=sep,
+            index=index,
+            index_label=index_label,
+            header=header,
+            na_rep=na_rep,
+            lineterminator=lineterminator,
+            quotechar=quotechar,
+        )
+        if path is not None:
+            Path(path).write_text(text, encoding=encoding)
+        return text
 
     def to_pandas(self) -> pd.DataFrame:
         from typedframe.conversions import to_pandas

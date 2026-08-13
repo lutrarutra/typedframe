@@ -263,7 +263,15 @@ users + more
 users.to_list()
 users.to_dicts()
 users.to_json()
+users.to_json(indent=2)
 TypedFrame.from_json(User, users.to_json())
+users.dump_json("users.json")
+TypedFrame.load_json(User, "users.json", unique="id")
+
+users.to_csv()
+users.to_csv("users.csv", sep=";", index=False)
+TypedFrame.from_csv(User, "users.csv", comment="#", header=0)
+TypedFrame.from_csv(User, "1,Ada,36,London\n", header=None)
 
 users.to_pandas()
 users.to_polars()
@@ -277,7 +285,7 @@ Pandas and Polars are optional. Install `typedframe[pandas]`, `typedframe[polars
 
 | Operation | Method |
 | --- | --- |
-| Construct | `TypedFrame(Model, rows, unique=...)`, `from_dicts`, `from_models`, `from_json`, `from_pandas`, `from_polars`, `empty` |
+| Construct | `TypedFrame(Model, rows, unique=...)`, `from_dicts`, `from_models`, `from_json`, `load_json`, `from_csv`, `from_pandas`, `from_polars`, `empty` |
 | Unique columns | `unique="id"`, `require_unique("id")` |
 | Iterate / index | `for row in frame`, `frame[i]`, `frame[i:j]`, `shape`, `columns` |
 | Columns | `frame["col"]`, `frame["col"] = values`, `loc[mask, "col"]`, `column`, `Future[T] = deferred()` |
@@ -287,7 +295,7 @@ Pandas and Polars are optional. Install `typedframe[pandas]`, `typedframe[polars
 | Group / aggregate | `group_by`, `agg`, `count`, `map_groups` |
 | Deduplicate | `unique` |
 | Combine | `append`, `extend`, `concat`, `+` |
-| Convert | `to_list`, `to_dicts`, `to_json`, `to_pandas`, `to_polars` |
+| Convert | `to_list`, `to_dicts`, `to_json`, `dump_json`, `to_csv`, `to_pandas`, `to_polars` |
 
 ## Development
 

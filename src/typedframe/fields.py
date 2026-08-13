@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 
 from pydantic import BaseModel, Field
 from pydantic.fields import FieldInfo
@@ -43,9 +43,9 @@ def is_unset_future(row: BaseModel, name: str, info: FieldInfo | None = None) ->
     return name not in row.model_fields_set
 
 
-def dump_row(row: BaseModel) -> dict[str, Any]:
+def dump_row(row: BaseModel, *, mode: Literal["python", "json"] = "python") -> dict[str, Any]:
     """``model_dump()`` without future columns that are still unset."""
-    data = row.model_dump()
+    data = row.model_dump(mode=mode)
     for name, info in type(row).model_fields.items():
         if is_unset_future(row, name, info):
             data.pop(name, None)

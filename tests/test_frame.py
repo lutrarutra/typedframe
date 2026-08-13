@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -423,6 +424,27 @@ def test_to_dicts_and_json_roundtrip(users: TypedFrame[User]) -> None:
     assert restored == users
     parsed = json.loads(users.to_json())
     assert parsed[1]["city"] == "LA"
+    pretty = users.to_json(indent=2)
+    assert "\n" in pretty
+
+
+def test_dump_and_load_json(users: TypedFrame[User], tmp_path: Path) -> None:
+    path = tmp_path / "users.json"
+    users.dump_json(path, indent=2)
+    loaded = TypedFrame.load_json(User, path, unique="id")
+    assert loaded == users
+    assert loaded.unique_columns == frozenset({"id"})
+
+
+def test_json_omits_unset_future() -> None:
+    class Row(BaseModel):
+        id: int
+        extra: Future[int] = deferred()
+
+    frame = TypedFrame(Row, [{"id": 1}])
+    assert "extra" not in json.loads(frame.to_json())[0]
+    frame["extra"] = [9]
+    assert json.loads(frame.to_json())[0]["extra"] == 9
 
 
 def test_equality(users: TypedFrame[User]) -> None:
