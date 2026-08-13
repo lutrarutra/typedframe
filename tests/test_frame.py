@@ -112,6 +112,17 @@ def test_column(users: TypedFrame[User]) -> None:
     assert users["age"] == [30, 25, 30, 40]
 
 
+def test_all_none_and_any_none(users: TypedFrame[User]) -> None:
+    assert users.any_none("score") is True
+    assert users.all_none("score") is False
+    assert users.any_none("name") is False
+    empty = TypedFrame.empty(User)
+    assert empty.all_none("score") is True
+    assert empty.any_none("score") is False
+    users["score"] = None
+    assert users.all_none("score") is True
+
+
 def test_shape(users: TypedFrame[User]) -> None:
     assert users.shape == (4, 5)
 

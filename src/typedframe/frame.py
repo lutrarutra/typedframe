@@ -442,6 +442,16 @@ class TypedFrame(Generic[T], Sequence[T]):
         require_fields(self._model, (name,))
         return [getattr(row, name) for row in self._rows]
 
+    def all_none(self, name: str) -> bool:
+        """Return True if every value in ``name`` is ``None``."""
+        values = self.column(name)
+        return all(value is None for value in values)
+
+    def any_none(self, name: str) -> bool:
+        """Return True if any value in ``name`` is ``None``."""
+        values = self.column(name)
+        return any(value is None for value in values)
+
     def map_columns(
         self,
         src: TypedFrame[Any],

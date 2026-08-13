@@ -115,6 +115,8 @@ Read a column as a list:
 ```python
 users["name"]
 users.column("age")
+users.all_none("score")
+users.any_none("score")
 ```
 
 Assign a column from a sequence, a per-row callable, `apply`, or a scalar:
@@ -288,7 +290,7 @@ Pandas and Polars are optional. Install `typedframe[pandas]`, `typedframe[polars
 | Construct | `TypedFrame(Model, rows, unique=...)`, `from_dicts`, `from_models`, `from_json`, `load_json`, `from_csv`, `from_pandas`, `from_polars`, `empty` |
 | Unique columns | `unique="id"`, `require_unique("id")` |
 | Iterate / index | `for row in frame`, `frame[i]`, `frame[i:j]`, `shape`, `columns` |
-| Columns | `frame["col"]`, `frame["col"] = values`, `loc[mask, "col"]`, `column`, `Future[T] = deferred()` |
+| Columns | `frame["col"]`, `frame["col"] = values`, `loc[mask, "col"]`, `column`, `all_none`, `any_none`, `Future[T] = deferred()` |
 | Filter | `filter`, `exclude` |
 | Transform | `apply`, `map`, `project`, `map_columns`, `update_where`, `apply_where` |
 | Sort | `sort_by`, `reverse`, `head`, `tail` |
